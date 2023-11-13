@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "errno.h": "c",
+        "graphdb_structs.h": "c",
+        "stdbool.h": "c",
+        "msg.h": "c",
+        "graphdb_utils.h": "c",
+        "graphdb_graph_functions.h": "c"
+    }
+}

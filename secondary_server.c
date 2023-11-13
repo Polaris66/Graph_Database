@@ -6,34 +6,10 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <errno.h>
-
-enum MessageType
-{
-    CLIENT_MESSAGE = 0,
-    LOAD_BALANCER_MESSAGE = 1
-};
-
-enum OperationNumber
-{
-    READ_OPERATION = 0,
-    WRITE_OPERATION = 1
-};
-
-enum SecondaryServerNumber
-{
-    SERVER_1 = 1,
-    SERVER_2 = 2
-};
-
-// Message Structure
-struct Message
-{
-    long sourceEntity;   // Sent from Client or Load Balancer
-    int sequenceNumber;  // Request Number; Unique for each client request
-    int operationNumber; // Operation Number
-    int targetServer;    // Secondary Server 1 or 2
-    char payload[256];   // Graph FileName
-};
+#include <pthread.h>
+#include "graphdb_structs.h"
+#include "graphdb_utils.h"
+#include "graphdb_graph_functions.h"
 
 int main(int argc, char *argv[])
 {
@@ -47,7 +23,7 @@ int main(int argc, char *argv[])
 
     // Get the Secondary Server Number
     int SERVER_NUMBER = atoi(argv[1]);
-    if (SERVER_NUMBER != SERVER_1 && SERVER_NUMBER != SERVER_2)
+    if (SERVER_NUMBER != SecondaryServer1 && SERVER_NUMBER != SecondaryServer2)
     {
         fprintf(stderr, "ERROR: INVALID SECONDARY SERVER NUMBER! ONLY 1 or 2 ALLOWED.\n");
         exit(EXIT_FAILURE);
@@ -62,7 +38,7 @@ int main(int argc, char *argv[])
     }
 
     // Create or get the message queue
-    int msgQueueID = msgget(key, 0666);
+    int msgQueueID = msgget(key, 0666 | IPC_CREAT);
     if (msgQueueID == -1)
     {
         perror("ERROR: Couldn't find the Message Queue!");
@@ -81,21 +57,39 @@ int main(int argc, char *argv[])
             if (errno != EINTR)
             {
                 // EINTR is expected when the process is interrupted by a signal
-                perror("ERROR: SOME ERROR OCCURED!");
+                perror("ERROR: SOME ERROR OCCURRED!");
                 exit(EXIT_FAILURE);
             }
         }
         else
         {
+            printf("Received Message:\n");
+            printf("Type: %ld\n", receivedMessage.MessageType);
+            printf("Sequence Number: %d\n", receivedMessage.payload.sequenceNumber);
+            printf("Operation Number: %d\n", receivedMessage.payload.operationNumber);
+            printf("Payload: %s\n", receivedMessage.payload.payload);
 
             printf("Received Message:\n");
-            printf("Type: %ld\n", receivedMessage.sourceEntity);
-            printf("Sequence Number: %d\n", receivedMessage.sequenceNumber);
-            printf("Operation Number: %d\n", receivedMessage.operationNumber);
-            printf("Target Server: %d\n", receivedMessage.targetServer);
-            printf("Payload: %s\n", receivedMessage.payload);
+            printf("Type: %ld\n", receivedMessage.MessageType);
+            printf("Sequence Number: %d\n", receivedMessage.payload.sequenceNumber);
+            printf("Operation Number: %d\n", receivedMessage.payload.operationNumber);
+            printf("Payload: %s\n", receivedMessage.payload.payload);
 
-            printf("Sending response back to the client...\n");
+            // Handle messages based on Operation Number using threads
+            pthread_t bfsThread, dfsThread;
+
+            if (receivedMessage.payload.operationNumber == BFS_OPERATION)
+            {
+                pthread_create(&bfsThread, NULL, handleBFS, (void *)&receivedMessage.payload);
+            }
+            else if (receivedMessage.payload.operationNumber == DFS_OPERATION)
+            {
+                pthread_create(&dfsThread, NULL, handleDFS, (void *)&receivedMessage.payload);
+            }
+            else
+            {
+                printf("Unknown Operation Number. Ignoring the message.\n");
+            }
         }
     }
 
