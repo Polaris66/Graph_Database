@@ -5,6 +5,7 @@
 #### Add your names here:
 
 1. Malladi Pradyumna
+2. Anirudh Bagalkotker
 
 ## Setup Instructions:
 
