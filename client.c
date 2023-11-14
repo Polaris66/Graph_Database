@@ -62,21 +62,29 @@ int main() {
         // scanf("%d", &choice);
 
         // Get user input
-        char sequence_number;
-        int operation_number;
+        char sequence_number[3];
+        char operation_number;
         char graph_file_name[MAX_SIZE];
         printf("Enter Sequence Number: ");
-        scanf("%s", &m.text[1]);
+        scanf("%s", &m.text[0]);
         // scanf("%d", &sequence_number);
+        if(m.text[1]=='\0')
+       { m.text[1]=' ';
+        m.text[2]=' ';}
+        if(m.text[2]=='\0')
+        m.text[2]=' ';
+
         printf("Enter Operation Number: ");
-        scanf("%d", &m.text[2]);
-        printf("Enter Graph File Name: ");
         scanf("%s", &m.text[3]);
+        m.text[4]=' ';
+        printf("Enter Graph File Name: ");
+        scanf("%s", &m.text[5]);
+        // printf("%s",)
 
         // Create a shared memory segment for the request
 
 
-        operation_number=m.text[2];
+        operation_number=m.text[3];
         // switch (m.text[2])
         // {
         // case 1:
@@ -111,12 +119,13 @@ int main() {
         //     break;
         // }
         //write operation
-        if (operation_number == 1 || operation_number == 2) {
+        if (operation_number == '1' || operation_number == '2') {
             // For write operations, prompt for additional information
             int num_nodes;
             printf("Enter number of nodes of the graph: ");
             scanf("%d", &num_nodes);
             // Dynamically allocate memory for the adjacency matrix
+            // int adjacency_matrix[num_nodes][num_nodes];
             int **adjacency_matrix = malloc(num_nodes * sizeof(int *));
             for (int i = 0; i < num_nodes; i++) {
                 adjacency_matrix[i] = malloc(num_nodes * sizeof(int));
@@ -127,6 +136,7 @@ int main() {
                 for (int j = 0; j < num_nodes; j++)
                     scanf("%d", &adjacency_matrix[i][j]);
             }
+            memcpy(shared_memory,adjacency_matrix,sizeof(adjacency_matrix));
 
             sprintf(shared_memory, "%d\n %d", num_nodes, adjacency_matrix);
             for (int i = 0; i < num_nodes; i++) {
@@ -135,7 +145,7 @@ int main() {
             free(adjacency_matrix);
         }
 
-        else if (operation_number == 3 || operation_number == 4) {
+        else if (operation_number == '3' || operation_number == '4') {
             // For read operations, prompt for the starting vertex
             int starting_vertex;
             printf("Enter starting vertex: ");
@@ -166,7 +176,7 @@ int main() {
             exit(1);
         }
 
-        printf("Sent \"%s\"", &m.text[1]);
+        printf("Sent \"%s\"", &m.text);
 
 
         // Detach the shared memory segment
