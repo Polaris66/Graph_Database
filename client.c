@@ -15,6 +15,14 @@ typedef struct message_buffer
     char text[100];
 } message;
 
+enum MessageType
+{
+    ToLoadReceiver = 1,
+    ToPrimaryServer = 2,
+    ToSecondaryServer1 = 3,
+    ToSecondaryServer2 = 4,
+    ToClient = 5
+};
 struct Payload
 {
     int sequenceNumber;  // Request Number; Unique for each client request
@@ -49,11 +57,9 @@ int main() {
     while (1) {
         Message m;
         //strcpy(m.text, "");
+        m.MessageType= ToLoadReceiver;
 
         int shared_memory_id;
-
-
-    
         // Display menu options
         printf("1. Add a new graph to the database\n");
         printf("2. Modify an existing graph of the database\n");
@@ -149,11 +155,10 @@ int main() {
         printf("Sent to \"%s\"", &m.payload.payload);
 
         {
-
             // Get Reply
             Message reply;
-            int fetchRes = msgrcv(msgid, &reply, sizeof(reply), 0, 0);
-            //We want to receive BFS/DFS
+            int fetchRes = msgrcv(msgid, &reply, sizeof(reply), ToLoadReceiver, 0);
+            //Replace last 2nd zero before use(give appropriate msgtype)
             //If msgtyp is equal to zero, the first message on the queue is received.
             //If msgtyp is greater than 0, the first message of type, msgtyp, is received.
             //If msgtyp is less than 0, the first message of the lowest type that is less than or equal to the absolute value of msgtyp is received.
