@@ -5,6 +5,13 @@
         "stdbool.h": "c",
         "msg.h": "c",
         "graphdb_utils.h": "c",
-        "graphdb_graph_functions.h": "c"
+        "graphdb_graph_functions.h": "c",
+        "stdlib.h": "c",
+        "graph_functions.h": "c",
+        "stdio.h": "c",
+        "utils.h": "c",
+        "structs.h": "c",
+        "ipc.h": "c",
+        "string.h": "c"
     }
 }

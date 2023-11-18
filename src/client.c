@@ -4,38 +4,8 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <sys/shm.h>
-
-#define MAX_SIZE 1024
-#define SHARED_MEMORY_SIZE 1024
-
-// Define a structure for the message
-typedef struct message_buffer
-{
-    long type;
-    char text[100];
-} message;
-
-enum MessageType
-{
-    ToLoadReceiver = 1,
-    ToPrimaryServer = 2,
-    ToSecondaryServer1 = 3,
-    ToSecondaryServer2 = 4,
-    ToClient = 5
-};
-struct Payload
-{
-    int sequenceNumber;  // Request Number; Unique for each client request
-    int operationNumber; // Operation Number
-    char payload[256];   // Graph FileName
-};
-
-// Message Structure
-typedef struct Message
-{
-    long MessageType;
-    struct Payload payload;
-} Message;
+#include <stdbool.h>
+#include "../graphdb/structs.h"
 
 int main() {
     long client_id;
@@ -43,43 +13,52 @@ int main() {
     // Define Connection
     key_t key;
     int msgid;
-    msgid = msgget(key, 0666);
 
     // Get Shared Message Queue
-    key = ftok("progfile", 65);
-//    key_t shared_memory_key = ftok("shmfile", 65);
+    key = ftok(msgq_file, 65);
+    msgid = msgget(key, 0666);
+
+
+    //    key_t shared_memory_key = ftok("shmfile", 65);
     if (msgid == -1)
     {
         perror("Client could not get message queue");
         exit(1);
     }
 
-    while (1) {
+    while (true) {
         Message m;
-        //strcpy(m.text, "");
-        m.MessageType= ToLoadReceiver;
+
+        // Set the MessageType
+        m.MessageType = ToLoadReceiver;
 
         int shared_memory_id;
+
+
         // Display menu options
         printf("1. Add a new graph to the database\n");
         printf("2. Modify an existing graph of the database\n");
         printf("3. Perform DFS on an existing graph of the database\n");
         printf("4. Perform BFS on an existing graph of the database\n");
 
-        // int choice;
-        // scanf("%d", &choice);
 
-        // Get user input
+        // Get and store user input
         int sequence_number;
         int operation_number;
-        char graph_file_name[MAX_SIZE];
-        printf("Enter Sequence Number: ");
-        scanf("%s", &m.payload.sequenceNumber);
+        char *graph_file_name = malloc(MAX_SIZE*sizeof(char));
 
+        printf("Enter Sequence Number: ");
+        scanf("%s", &sequence_number);
         printf("Enter Operation Number: ");
-        scanf("%d", &m.payload.operationNumber);
+        scanf("%d", &operation_number);
         printf("Enter Graph File Name: ");
-        scanf("%s", &m.payload.payload);
+        scanf("%s", &graph_file_name[0]);
+
+        Payload p;
+        p.operationNumber = operation_number;
+        p.payload = graph_file_name;
+        p.sequenceNumber = sequence_number;
+        m.payload = p;
 
         // Create a shared memory segment for the request
         shared_memory_id = shmget(m.payload.sequenceNumber, SHARED_MEMORY_SIZE, IPC_CREAT | 0666);
@@ -88,22 +67,23 @@ int main() {
             perror("shmget");
             exit(0);
         }
+
         char *shared_memory = shmat(shared_memory_id, NULL, 0);
         //CHECK
         if (shared_memory == (char*)-1) {
             perror("Error attaching shared memory");
             exit(EXIT_FAILURE);
-        }     
-
-        operation_number=m.payload.operationNumber;
-//        printf("op is %d", operation_number);
+        }
+        
 
         //write operation
         if (operation_number == 1 || operation_number == 2) {
+
             // For write operations, prompt for additional information
             int num_nodes;
             printf("Enter number of nodes of the graph: ");
             scanf("%d", &num_nodes);
+
             // Dynamically allocate memory for the adjacency matrix
             // int adjacency_matrix[num_nodes][num_nodes];
             int **adjacency_matrix = malloc(num_nodes * sizeof(int *));

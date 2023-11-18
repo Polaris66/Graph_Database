@@ -4,7 +4,7 @@
 
 #include <pthread.h>
 #include <stdio.h>
-#include "graphdb_structs.h"
+#include "structs.h"
 
 // Thread function for BFS
 void *handleBFS(void *arg)

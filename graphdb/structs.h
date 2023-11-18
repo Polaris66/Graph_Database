@@ -28,7 +28,7 @@ struct Payload
 {
     int sequenceNumber;  // Request Number; Unique for each client request
     int operationNumber; // Operation Number
-    char payload[256];   // Graph FileName
+    char *payload;   // Graph FileName
 };
 
 // Message Structure
@@ -37,5 +37,16 @@ struct Message
     long MessageType;
     struct Payload payload;
 };
+
+typedef struct Message Message;
+typedef struct Payload Payload;
+
+
+#define MAX_SIZE 1024
+#define SHARED_MEMORY_SIZE 1024
+
+char *msgq_file = "msgq";
+
+#include <sys/msg.h>
 
 #endif // GRAPHDB_STRUCTS.h

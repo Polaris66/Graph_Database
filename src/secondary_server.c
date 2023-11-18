@@ -7,9 +7,9 @@
 #include <sys/msg.h>
 #include <errno.h>
 #include <pthread.h>
-#include "graphdb_structs.h"
-#include "graphdb_utils.h"
-#include "graphdb_graph_functions.h"
+#include "../graphdb/structs.h"
+#include "../graphdb/utils.h"
+#include "../graphdb/graph_functions.h"
 
 int main(int argc, char *argv[])
 {
@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
     }
 
     // Key for the message queue (make sure it matches the key used by the load balancer)
-    key_t key = ftok("msgq", 'K');
+    key_t key = ftok(msgq_file, 65);
     if (key == -1)
     {
         perror("ERROR: Couldn't make the Message Queue Key!");
@@ -38,8 +38,8 @@ int main(int argc, char *argv[])
     }
 
     // Create or get the message queue
-    int msgQueueID = msgget(key, 0666 | IPC_CREAT);
-    if (msgQueueID == -1)
+    int msg_id = msgget(key, 0666);
+    if (msg_id == -1)
     {
         perror("ERROR: Couldn't find the Message Queue!");
         exit(EXIT_FAILURE);
@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
     {
         // Receive a message from the message queue
         struct Message receivedMessage;
-        if (msgrcv(msgQueueID, &receivedMessage, sizeof(receivedMessage) - sizeof(long), SERVER_NUMBER, 0) == -1)
+        if (msgrcv(msg_id, &receivedMessage, sizeof(receivedMessage) - sizeof(long), SERVER_NUMBER, 0) == -1)
         {
             if (errno != EINTR)
             {
@@ -76,20 +76,20 @@ int main(int argc, char *argv[])
             printf("Payload: %s\n", receivedMessage.payload.payload);
 
             // Handle messages based on Operation Number using threads
-            pthread_t bfsThread, dfsThread;
+            // pthread_t bfsThread, dfsThread;
 
-            if (receivedMessage.payload.operationNumber == BFS_OPERATION)
-            {
-                pthread_create(&bfsThread, NULL, handleBFS, (void *)&receivedMessage.payload);
-            }
-            else if (receivedMessage.payload.operationNumber == DFS_OPERATION)
-            {
-                pthread_create(&dfsThread, NULL, handleDFS, (void *)&receivedMessage.payload);
-            }
-            else
-            {
-                printf("Unknown Operation Number. Ignoring the message.\n");
-            }
+            // if (receivedMessage.payload.operationNumber == BFS_OPERATION)
+            // {
+            //     pthread_create(&bfsThread, NULL, handleBFS, (void *)&receivedMessage.payload);
+            // }
+            // else if (receivedMessage.payload.operationNumber == DFS_OPERATION)
+            // {
+            //     pthread_create(&dfsThread, NULL, handleDFS, (void *)&receivedMessage.payload);
+            // }
+            // else
+            // {
+            //     printf("Unknown Operation Number. Ignoring the message.\n");
+            // }
         }
     }
 
