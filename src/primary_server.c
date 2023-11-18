@@ -126,11 +126,11 @@ void *HandleRequest(void *params)
 	int sendRes = msgsnd(msg_id, &m, sizeof(m.payload), 0);
 
 	// Error Handling
-    if (sendRes == -1)
-    {
-        perror("Message could not be sent by client");
-        exit(1);
-    }
+	if (sendRes == -1)
+	{
+		perror("Message could not be sent by client");
+		exit(1);
+	}
 
 	printf("Sent message: %s", m.payload.graph_file_name);
 }

@@ -65,26 +65,28 @@ void *HandleRequest(void *params)
 		val = atoi(num);
 	}
 
-	if (operationNumber == 1 || operationNumber == 2)
-	{
-		reader = 0;
-		pthread_mutex_lock(&writeLock[val]);
-		m.mtype = 2;
-	}
-	else
-	{
-		reader = 1;
-		pthread_mutex_lock(&readLock[val]);
-		readerCount[val]++;
-		if (readerCount[val] == 1)
-			pthread_mutex_lock(&writeLock[val]);
-		pthread_mutex_unlock(&readLock[val]);
+	// if (operationNumber == 1 || operationNumber == 2)
+	// {
+	// 	reader = 0;
+	// 	pthread_mutex_lock(&writeLock[val]);
+	// 	m.mtype = 2;
+	// }
+	// else
+	// {
+	// 	reader = 1;
+	// 	pthread_mutex_lock(&readLock[val]);
+	// 	readerCount[val]++;
+	// 	if (readerCount[val] == 1)
+	// 		pthread_mutex_lock(&writeLock[val]);
+	// 	pthread_mutex_unlock(&readLock[val]);
 
-		if (sequenceNumber % 2 == 0)
-			m.mtype = 3;
-		else
-			m.mtype = 4;
-	}
+	// 	if (sequenceNumber % 2 == 0)
+	// 		m.mtype = 3;
+	// 	else
+	// 		m.mtype = 4;
+	// }
+
+	// m.mtype = 2;
 
 	// Send To Server (Either Primary or Secondary)
 	int sendRes = msgsnd(msg_id, &m, sizeof(m), 0);
@@ -161,21 +163,6 @@ int main(int argc, char *argv[])
 
 		printf(
 			"\nRecieved message with: \nMessage Type: %d\nSequence Number:%d \nOperation Number:%d \nFile Name:%s\n", m.mtype, m.payload.sequence_number, m.payload.operation_number, m.payload.graph_file_name);
-
-		m.mtype = 2;
-
-		// Send To Server (Either Primary or Secondary)
-		int sendRes = msgsnd(msg_id, &m, sizeof(m.payload), 0);
-
-		// Error Handling
-		if (sendRes == -1)
-		{
-			perror("Load Balancer could not send message");
-			exit(1);
-		}
-
-		printf(
-			"\n Sent message with: \nMessage Type: %d\nSequence Number:%d \nOperation Number:%d \nFile Name:%s\n", m.mtype, m.payload.sequence_number, m.payload.operation_number, m.payload.graph_file_name);
 
 		pthread_t thread;
 		pthread_attr_t thread_attr;
