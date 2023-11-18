@@ -10,5 +10,13 @@
 ## Setup Instructions:
 
 ```
-find . -name "secondary_server.c" | entr -r sh -c 'echo "" && echo "Change Detected! Building...." && echo "" && echo "" && gcc secondary_server.c -o secondary_server.bin && ./secondary_server.bin 1 & ./secondary_server.bin 2'
+## Run Secondary Server 1 and 2
+gcc src/secondary_server.c -o secondary_server && ./secondary_server 1
+gcc src/secondary_server.c -o secondary_server && ./secondary_server 2
+
+## Run Load Balancer
+gcc src/load_balancer.c -o load_balancer && ./load_balancer
+
+## Run Client
+gcc src/client.c -o client && ./client
 ```

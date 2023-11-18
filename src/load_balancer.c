@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 	int msg_id;
 
 	// Create Shared Message Queuep
-	key = ftok("progfile", 65);
+	key = ftok("msgq", 65);
 	msg_id = msgget(key, 0666 | IPC_CREAT);
 
 	// Error Handling
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 		Message m;
 
 		// Receive Message;
-		int fetchRes = msgrcv(msg_id, &m, sizeof(m), 0, 0);
+		int fetchRes = msgrcv(msg_id, &m, sizeof(m.payload), 1, 0);
 
 		// Error Handling
 		if (fetchRes == -1)
@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
 		m.mtype = 3;
 
 		// Send To Server (Either Primary or Secondary)
-		int sendRes = msgsnd(msg_id, &m, sizeof(m), 0);
+		int sendRes = msgsnd(msg_id, &m, sizeof(m.payload), 0);
 
 		// Error Handling
 		if (sendRes == -1)

@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
     }
 
     // Key for the message queue (make sure it matches the key used by the load balancer)
-    key_t key = ftok("progfile", 65);
+    key_t key = ftok("msgq", 65);
 
     // Create or get the message queue
     int msg_id = msgget(key, 0666);
@@ -60,12 +60,12 @@ int main(int argc, char *argv[])
         // Receive a message from the message queue
         Message m;
         // Receive Message;
-		int fetchRes = msgrcv(msg_id, &m, sizeof(m), SERVER_NUMBER + 2, 0);
+		int fetchRes = msgrcv(msg_id, &m, sizeof(m.payload), SERVER_NUMBER + 2, 0);
 
 		// Error Handling
 		if (fetchRes == -1)
 		{
-			perror("Load Balancer could not receive message");
+			perror("Secondary Server could not receive message");
 			exit(1);
 		}
 

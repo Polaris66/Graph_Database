@@ -26,7 +26,7 @@ int main() {
     int msgid;
 
     // Get Shared Message Queue
-    key = ftok("progfile", 65);
+    key = ftok("msgq", 65);
     msgid = msgget(key, 0666);
 
 
@@ -136,7 +136,7 @@ int main() {
 //             sprintf(shared_memory, "%d", starting_vertex);
 //         }
 
-        int sendRes = msgsnd(msgid, &m, sizeof(m), 0);
+        int sendRes = msgsnd(msgid, &m, sizeof(m.payload), 0);
 
         // Error Handling
         if (sendRes == -1)
