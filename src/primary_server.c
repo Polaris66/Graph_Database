@@ -122,22 +122,17 @@ void *HandleRequest(void *params)
 	// Remove the shared memory segment (optional)
 	shmctl(shmid, IPC_RMID, NULL);
 
-	// Send Message
+	m.mtype = 5;
+	int sendRes = msgsnd(msg_id, &m, sizeof(m.payload), 0);
 
-	// // Send To Load balancer
-	// m.mtype = 1;
-	// int sendRes = msgsnd(msg_id, &m, sizeof(m), 0);
+	// Error Handling
+    if (sendRes == -1)
+    {
+        perror("Message could not be sent by client");
+        exit(1);
+    }
 
-	// // Send To Client
-	// m.mtype = 5;
-	// sendRes = msgsnd(msg_id, &m, sizeof(m), 0);
-
-	// // Error Handling
-	// if (sendRes == -1)
-	// {
-	// 	perror("Server could not send message");
-	// 	exit(1);
-	// }
+	printf("Sent message: %s", m.payload.graph_file_name);
 }
 
 int main(int argc, char *argv[])

@@ -130,7 +130,21 @@ int main()
         printf(
             "\nSent message with: \nMessage Type: %d\nSequence Number:%d \nOperation Number:%d \nFile Name:%s\n", m.mtype, m.payload.sequence_number, m.payload.operation_number, m.payload.graph_file_name);
 
-        if (operation_number == 3 || operation_number == 4)
+        if(operation_number == 1 || operation_number == 2){
+            Message reply;
+            // Receive Message;
+            int fetchRes = msgrcv(msgid, &reply, sizeof(reply.payload), 5, 0);
+
+            // Error Handling
+            if (fetchRes == -1)
+            {
+                perror("Client could not receive message");
+                exit(1);
+            }
+
+            printf("%s",reply.payload.graph_file_name);
+        }
+        else if (operation_number == 3 || operation_number == 4)
         {
             Message reply;
             // Receive Message;

@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
             "\nRecieved message with: \nMessage Type: %d\nSequence Number:%d \nOperation Number:%d \nFile Name:%s\n",m.mtype ,m.payload.sequence_number, m.payload.operation_number, m.payload.graph_file_name);
 
 
-		m.mtype = 4;
+		m.mtype = 2;
 
 		// Send To Server (Either Primary or Secondary)
 		int sendRes = msgsnd(msg_id, &m, sizeof(m.payload), 0);
