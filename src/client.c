@@ -130,34 +130,37 @@ int main()
         printf(
             "\nSent message with: \nMessage Type: %d\nSequence Number:%d \nOperation Number:%d \nFile Name:%s\n", m.mtype, m.payload.sequence_number, m.payload.operation_number, m.payload.graph_file_name);
 
-        Message reply;
-        // Receive Message;
-        int fetchRes = msgrcv(msgid, &reply, sizeof(reply.payload), 5, 0);
+        if (operation_number == 3 || operation_number == 4)
+        {
+            Message reply;
+            // Receive Message;
+            int fetchRes = msgrcv(msgid, &reply, sizeof(reply.payload), 5, 0);
 
-        // Error Handling
-        if (fetchRes == -1)
-        {
-            perror("Client could not receive message");
-            exit(1);
-        }
+            // Error Handling
+            if (fetchRes == -1)
+            {
+                perror("Client could not receive message");
+                exit(1);
+            }
 
-        if (reply.payload.operation_number == 3)
-        {
-            printf("Vertices at end of all paths of DFS are:\n");
-            for (int i = 0; i < reply.payload.sequence_number; i++)
+            if (reply.payload.operation_number == 3)
             {
-                printf("%d ", reply.payload.result[i]);
+                printf("Vertices at end of all paths of DFS are:\n");
+                for (int i = 0; i < reply.payload.sequence_number; i++)
+                {
+                    printf("%d ", reply.payload.result[i]);
+                }
+                printf("\n");
             }
-            printf("\n");
-        }
-        else if (reply.payload.operation_number == 4)
-        {
-            printf("BFS traversal:\n");
-            for (int i = 0; i < reply.payload.sequence_number; i++)
+            else if (reply.payload.operation_number == 4)
             {
-                printf("%d ", reply.payload.result[i]);
+                printf("BFS traversal:\n");
+                for (int i = 0; i < reply.payload.sequence_number; i++)
+                {
+                    printf("%d ", reply.payload.result[i]);
+                }
+                printf("\n");
             }
-            printf("\n");
         }
     }
 
