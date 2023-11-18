@@ -9,9 +9,136 @@
 #include <sys/shm.h>
 #include <errno.h>
 #include <pthread.h>
-#include "../graphdb/structs.h"
-#include "../graphdb/utils.h"
-#include "../graphdb/graph_functions.h"
+
+#define SHARED_MEMORY_SIZE 1024
+#define MAX_NODES 10
+
+// Structure to hold data in shared memory
+
+typedef struct Payload
+{
+	int sequence_number;
+	int operation_number;
+	char graph_file_name[50];
+	int result[50];
+} Payload;
+
+// Message Structure Definition
+typedef struct Message
+{
+	long mtype;
+	Payload payload;
+} Message;
+
+typedef struct Argument
+{
+	int msg_id;
+	Message m;
+} argParams;
+
+typedef struct
+{
+	int nodes;
+	int adjacencyMatrix[MAX_NODES][MAX_NODES];
+} SharedData;
+
+void *HandleRequest(void *params)
+{
+	argParams arguments = *(argParams *)params;
+	Message m = arguments.m;
+	int msg_id = arguments.msg_id;
+	Payload load = m.payload;
+
+	int sequenceNumber = load.sequence_number;
+	int operationNumber = load.operation_number;
+	char *GraphFileName = load.graph_file_name;
+
+	// Generate a key for the shared memory segment
+	key_t shkey = ftok("shmfile", sequenceNumber);
+
+	// Get the shared memory segment
+	int shmid = shmget(shkey, sizeof(SharedData), 0666);
+
+	// Attach the shared memory segment to the process
+	SharedData *data = (SharedData *)shmat(shmid, NULL, 0);
+
+	if (operationNumber == 1)
+	{
+		FILE *file = fopen(GraphFileName, "w");
+		if (file == NULL)
+		{
+			perror("Error opening file");
+			exit(1);
+		}
+
+		// Write the received data to the file
+		fprintf(file, "%d\n", data->nodes);
+		for (int i = 0; i < data->nodes; i++)
+		{
+			for (int j = 0; j < data->nodes; j++)
+			{
+				fprintf(file, "%d ", data->adjacencyMatrix[i][j]);
+			}
+			fprintf(file, "\n");
+		}
+
+		// Close the file
+		fclose(file);
+		strcpy(m.payload.graph_file_name, "File Successfully Added");
+	}
+	else if (operationNumber == 2)
+	{
+		FILE *file = fopen(GraphFileName, "w+");
+		if (file == NULL)
+		{
+			perror("Error opening file");
+			exit(1);
+		}
+
+		// Write the received data to the file
+		fprintf(file, "%d\n", data->nodes);
+		for (int i = 0; i < data->nodes; i++)
+		{
+			for (int j = 0; j < data->nodes; j++)
+			{
+				fprintf(file, "%d ", data->adjacencyMatrix[i][j]);
+			}
+			fprintf(file, "\n");
+		}
+
+		// Close the file
+		fclose(file);
+		strcpy(m.payload.graph_file_name, "File Successfully Modified");
+	}
+	else
+	{
+		printf("Invalid Operation Number\n");
+		exit(0);
+	}
+
+	// / Detach the shared memory segment
+	shmdt(data);
+
+	// Remove the shared memory segment (optional)
+	shmctl(shmid, IPC_RMID, NULL);
+
+	// Send Message
+
+	// // Send To Load balancer
+	// m.mtype = 1;
+	// int sendRes = msgsnd(msg_id, &m, sizeof(m), 0);
+
+	// // Send To Client
+	// m.mtype = 5;
+	// sendRes = msgsnd(msg_id, &m, sizeof(m), 0);
+
+	// // Error Handling
+	// if (sendRes == -1)
+	// {
+	// 	perror("Server could not send message");
+	// 	exit(1);
+	// }
+}
 
 int main(int argc, char *argv[])
 {
@@ -20,7 +147,7 @@ int main(int argc, char *argv[])
 	int msg_id;
 
 	// Create Shared Message Queue
-	key = ftok(msgq_file, 65);
+	key = ftok("msgq", 65);
 	msg_id = msgget(key, 0666);
 
 	// Error Handling
@@ -34,7 +161,7 @@ int main(int argc, char *argv[])
 	{
 		Message m;
 		// Receive Message
-		int fetchRes = msgrcv(msg_id, &m, sizeof(m), ToPrimaryServer, 0);
+		int fetchRes = msgrcv(msg_id, &m, sizeof(m), 2, 0);
 
 		// Error Handling
 		if (fetchRes == -1)
@@ -43,95 +170,16 @@ int main(int argc, char *argv[])
 			exit(1);
 		}
 
-		Payload p = m.payload;
+		printf("\nReceived message with: \nMessage Type: %d\nSequence Number:%d \nOperation Number:%d \nFile Name:%s\n", m.mtype, m.payload.sequence_number, m.payload.operation_number, m.payload.graph_file_name);
+
 		pthread_t thread;
 		pthread_attr_t thread_attr;
-		pthread_attr_init(&thread_attr);
 
-		int pthread_create(thread, thread_attr, HandleRequest, p, m, msg_id);
+		argParams params;
+		params.m = m;
+		params.msg_id = msg_id;
+
+		pthread_create(&thread, NULL, (void *)HandleRequest, (void *)&params);
 		pthread_join(thread, NULL);
 	}
-}
-
-int HandleRequest(void *p, Message m, int msg_id)
-{
-	Payload load = *(Payload *)p;
-
-	int sequenceNumber = load.sequenceNumber;
-	int operationNumber = load.operationNumber;
-	char GraphFileName[256] = load.payload;
-
-	int shared_memory_id;
-	shared_memory_id = shmget(sequenceNumber, SHARED_MEMORY_SIZE, 0666);
-	if (shared_memory_id == -1)
-	{
-		perror("shmget");
-		exit(0);
-	}
-	char *shared_memory = shmat(shared_memory_id, NULL, 0);
-	// CHECK
-	if (shared_memory == (char *)-1)
-	{
-		perror("Error attaching shared memory");
-		exit(EXIT_FAILURE);
-	}
-
-	int nodes = atoi(shared_memory[0]);
-	char *returnStr;
-
-	if (operationNumber == 1)
-	{
-		FILE *fp = fopen(GraphFileName, "w");
-		if (fp == NULL)
-		{
-			printf("Error opening file\n");
-			exit(0);
-		}
-		fprintf(fp, "%d\n", nodes);
-		for (int i = 0; i < nodes; i++)
-		{
-			for (int j = 0; j < nodes; j++)
-				fprintf(fp, "%c ", shared_memory[(i * nodes + j + 1)]);
-			fprintf(fp, "\n");
-		}
-		fclose(fp);
-		strcpy(returnStr, "File Successfully Added");
-	}
-	else if (operationNumber == 2)
-	{
-		FILE *fp = fopen(GraphFileName, "w+");
-		if (fp == NULL)
-		{
-			printf("Error opening file\n");
-			exit(0);
-		}
-		fprintf(fp, "%d\n", nodes);
-		for (int i = 0; i < nodes; i++)
-		{
-			for (int j = 0; j < nodes; j++)
-				fprintf(fp, "%c ", shared_memory[(i * nodes + j + 1)]);
-			fprintf(fp, "\n");
-		}
-		fclose(fp);
-		strcpy(returnStr, "File Successfully Modified");
-	}
-	else
-	{
-		printf("Invalid Operation Number\n");
-		exit(0);
-	}
-
-	// Send Message
-	strcpy(load.payload, returnStr);
-	m.payload = load;
-
-	// Send To Load balancer
-	m.MessageType = ToLoadReceiver;
-	int sendRes = msgsnd(msg_id, &m, sizeof(m), 0);
-
-	// Send To Client
-	m.MessageType = ToClient;
-	int sendRes = msgsnd(msg_id, &m, sizeof(m), 0);
-
-	return 0;
 }

@@ -6,6 +6,15 @@
 #include <sys/shm.h>
 #include <stdbool.h>
 
+#define SHARED_MEMORY_SIZE 1024
+#define MAX_NODES 10
+
+typedef struct
+{
+    int nodes;
+    int adjacencyMatrix[MAX_NODES][MAX_NODES];
+} SharedData;
+
 typedef struct Payload
 {
     int sequence_number;
@@ -21,7 +30,8 @@ typedef struct Message
     Payload payload;
 } Message;
 
-int main() {
+int main()
+{
     // Define Connection
     key_t key;
     int msgid;
@@ -30,7 +40,6 @@ int main() {
     key = ftok("msgq", 65);
     msgid = msgget(key, 0666);
 
-
     //    key_t shared_memory_key = ftok("shmfile", 65);
     if (msgid == -1)
     {
@@ -38,14 +47,14 @@ int main() {
         exit(1);
     }
 
-    while (true) {
+    while (true)
+    {
         Message m;
 
         // Set the MessageType
         m.mtype = 1;
 
         // int shared_memory_id;
-
 
         // Display menu options
         printf("\n\n");
@@ -73,69 +82,41 @@ int main() {
         p.sequence_number = sequence_number;
         m.payload = p;
 
-//         // Create a shared memory segment for the request
-//         shared_memory_id = shmget(m.payload.sequenceNumber, SHARED_MEMORY_SIZE, IPC_CREAT | 0666);
-//         if(shared_memory_id==-1)
-//         {
-//             perror("shmget");
-//             exit(0);
-//         }
+        // / Generate a key for the shared memory segment
+        key_t shkey = ftok("shmfile", sequence_number);
 
-//         char *shared_memory = shmat(shared_memory_id, NULL, 0);
-//         //CHECK
-//         if (shared_memory == (char*)-1) {
-//             perror("Error attaching shared memory");
-//             exit(EXIT_FAILURE);
-//         }
-        
+        // Create a shared memory segment
+        int shmid = shmget(shkey, sizeof(SharedData), IPC_CREAT | 0666);
 
-//         //write operation
-//         if (operation_number == 1 || operation_number == 2) {
+        // Attach the shared memory segment to the process
+        SharedData *data = (SharedData *)shmat(shmid, NULL, 0);
 
-//             // For write operations, prompt for additional information
-//             int num_nodes;
-//             printf("Enter number of nodes of the graph: ");
-//             scanf("%d", &num_nodes);
+        if (operation_number == 1 || operation_number == 2)
+        {
 
-//             // Dynamically allocate memory for the adjacency matrix
-//             // int adjacency_matrix[num_nodes][num_nodes];
-//             int **adjacency_matrix = malloc(num_nodes * sizeof(int *));
-//             for (int i = 0; i < num_nodes; i++) {
-//                 adjacency_matrix[i] = malloc(num_nodes * sizeof(int));
-//             }
+            // For write operations, prompt for additional information
+            // Input: Number of nodes
+            printf("Enter the number of nodes: ");
+            scanf("%d", &data->nodes);
 
-//             printf("Enter adjacency matrix: ");
-//             for (int i = 0; i < num_nodes; i++) {
-//                 for (int j = 0; j < num_nodes; j++)
-//                     scanf("%d", &adjacency_matrix[i][j]);
-//             }
-// //            memcpy(shared_memory,adjacency_matrix,sizeof(adjacency_matrix));
-// //assuming shared memory has adequate space
+            // Input: Adjacency Matrix
+            printf("Enter the adjacency matrix (%d x %d):\n", data->nodes, data->nodes);
+            for (int i = 0; i < data->nodes; i++)
+            {
+                for (int j = 0; j < data->nodes; j++)
+                {
+                    scanf("%d", &data->adjacencyMatrix[i][j]);
+                }
+            }
 
-//             sprintf(shared_memory, "%d", num_nodes);
-//             shared_memory+=4;
-//             for(int i=0;i<num_nodes;i++)
-//             {
-//                 for(int j=0;j<num_nodes;j++){
-//                     sprintf(shared_memory,"%d", adjacency_matrix[i][j]);
-//                     shared_memory+=4;
-//                 }
-
-//             }
-//             for (int i = 0; i < num_nodes; i++) {
-//                 free(adjacency_matrix[i]);
-//             }
-//             free(adjacency_matrix);
-//         }
-
-//         else if (operation_number == 3 || operation_number == 4) {
-//             // For read operations, prompt for the starting vertex
-//             int starting_vertex;
-//             printf("Enter starting vertex: ");
-//             scanf("%d", &starting_vertex);
-//             // Write to shared memory
-//             sprintf(shared_memory, "%d", starting_vertex);
-//         }
+            shmdt(data);
+        }
+        else if (operation_number == 3 || operation_number == 4)
+        {
+            // For read operations, prompt for the starting vertex
+            printf("Enter starting vertex: ");
+            scanf("%d", &data->nodes);
+        }
 
         int sendRes = msgsnd(msgid, &m, sizeof(m.payload), 0);
 
@@ -147,8 +128,7 @@ int main() {
         }
 
         printf(
-            "\nSent message with: \nMessage Type: %d\nSequence Number:%d \nOperation Number:%d \nFile Name:%s\n",m.mtype ,m.payload.sequence_number, m.payload.operation_number, m.payload.graph_file_name);
-
+            "\nSent message with: \nMessage Type: %d\nSequence Number:%d \nOperation Number:%d \nFile Name:%s\n", m.mtype, m.payload.sequence_number, m.payload.operation_number, m.payload.graph_file_name);
 
         Message reply;
         // Receive Message;
@@ -161,7 +141,8 @@ int main() {
             exit(1);
         }
 
-        if(reply.payload.operation_number == 3){
+        if (reply.payload.operation_number == 3)
+        {
             printf("Vertices at end of all paths of DFS are:\n");
             for (int i = 0; i < reply.payload.sequence_number; i++)
             {
@@ -169,7 +150,8 @@ int main() {
             }
             printf("\n");
         }
-        else if(reply.payload.operation_number == 4){
+        else if (reply.payload.operation_number == 4)
+        {
             printf("BFS traversal:\n");
             for (int i = 0; i < reply.payload.sequence_number; i++)
             {
@@ -177,28 +159,6 @@ int main() {
             }
             printf("\n");
         }
-
-                // {
-        //     // Get Reply
-        //     Message reply;
-        //     int fetchRes = msgrcv(msgid, &reply, sizeof(reply), ToClient, 0);
-        //     //Replace last 2nd zero before use(give appropriate msgtype)
-        //     //If msgtyp is equal to zero, the first message on the queue is received.
-        //     //If msgtyp is greater than 0, the first message of type, msgtyp, is received.
-        //     //If msgtyp is less than 0, the first message of the lowest type that is less than or equal to the absolute value of msgtyp is received.
-
-        //     // Error Handling
-        //     if (fetchRes == -1)
-        //     {
-        //         perror("Message could not be recieved by client");
-        //         exit(1);
-        //     }
-        //     printf("Reply from Server: \"%s\"", reply.payload.payload);
-        // }
-
-        // // Detach the shared memory segment
-        // shmdt(shared_memory);
-        // shmctl(shared_memory_id, IPC_RMID, NULL);
     }
 
     return 0;
