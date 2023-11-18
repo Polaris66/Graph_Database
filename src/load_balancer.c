@@ -13,7 +13,8 @@ typedef struct Payload
 {
     int sequence_number;
     int operation_number;
-    char graph_file_name[1024];
+    char graph_file_name[50];
+    int result[50];
 } Payload;
 
 // Message Structure Definition
@@ -68,7 +69,7 @@ int main(int argc, char *argv[])
             "\nRecieved message with: \nMessage Type: %d\nSequence Number:%d \nOperation Number:%d \nFile Name:%s\n",m.mtype ,m.payload.sequence_number, m.payload.operation_number, m.payload.graph_file_name);
 
 
-		m.mtype = 3;
+		m.mtype = 4;
 
 		// Send To Server (Either Primary or Secondary)
 		int sendRes = msgsnd(msg_id, &m, sizeof(m.payload), 0);

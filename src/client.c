@@ -10,7 +10,8 @@ typedef struct Payload
 {
     int sequence_number;
     int operation_number;
-    char graph_file_name[1024];
+    char graph_file_name[50];
+    int result[50];
 } Payload;
 
 // Message Structure Definition
@@ -148,7 +149,36 @@ int main() {
         printf(
             "\nSent message with: \nMessage Type: %d\nSequence Number:%d \nOperation Number:%d \nFile Name:%s\n",m.mtype ,m.payload.sequence_number, m.payload.operation_number, m.payload.graph_file_name);
 
-        // {
+
+        Message reply;
+        // Receive Message;
+        int fetchRes = msgrcv(msgid, &reply, sizeof(reply.payload), 5, 0);
+
+        // Error Handling
+        if (fetchRes == -1)
+        {
+            perror("Client could not receive message");
+            exit(1);
+        }
+
+        if(reply.payload.operation_number == 3){
+            printf("Vertices at end of all paths of DFS are:\n");
+            for (int i = 0; i < reply.payload.sequence_number; i++)
+            {
+                printf("%d ", reply.payload.result[i]);
+            }
+            printf("\n");
+        }
+        else if(reply.payload.operation_number == 4){
+            printf("BFS traversal:\n");
+            for (int i = 0; i < reply.payload.sequence_number; i++)
+            {
+                printf("%d ", reply.payload.result[i]);
+            }
+            printf("\n");
+        }
+
+                // {
         //     // Get Reply
         //     Message reply;
         //     int fetchRes = msgrcv(msgid, &reply, sizeof(reply), ToClient, 0);
