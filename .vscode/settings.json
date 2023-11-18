@@ -12,6 +12,7 @@
         "utils.h": "c",
         "structs.h": "c",
         "ipc.h": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "pthread.h": "c"
     }
 }

@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -Wextra
 
-SRCS = src/secondary_server.c src/client.c
+SRCS = src/secondary_server.c src/client.c src/load_balancer.c
 OBJS = $(SRCS:.c=.o)
 TARGETS = secondary_server.bin client.bin load_balancer.bin
 

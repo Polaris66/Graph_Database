@@ -5,17 +5,28 @@
 #include <sys/msg.h>
 #include <sys/shm.h>
 #include <stdbool.h>
-#include "../graphdb/structs.h"
+
+typedef struct Payload
+{
+    int sequence_number;
+    int operation_number;
+    char graph_file_name[1024];
+} Payload;
+
+// Message Structure Definition
+typedef struct Message
+{
+    long mtype;
+    Payload payload;
+} Message;
 
 int main() {
-    long client_id;
-
     // Define Connection
     key_t key;
     int msgid;
 
     // Get Shared Message Queue
-    key = ftok(msgq_file, 65);
+    key = ftok("progfile", 65);
     msgid = msgget(key, 0666);
 
 
@@ -30,9 +41,9 @@ int main() {
         Message m;
 
         // Set the MessageType
-        m.MessageType = ToLoadReceiver;
+        m.mtype = 1;
 
-        int shared_memory_id;
+        // int shared_memory_id;
 
 
         // Display menu options
@@ -46,19 +57,19 @@ int main() {
         // Get and store user input
         int sequence_number;
         int operation_number;
-        char *graph_file_name =(char *) malloc(MAX_SIZE * sizeof(char));
+        char graph_file_name[1024];
 
         printf("Enter Sequence Number: ");
-        scanf("%s", &sequence_number);
+        scanf("%d", &sequence_number);
         printf("Enter Operation Number: ");
         scanf("%d", &operation_number);
         printf("Enter Graph File Name: ");
         scanf("%s", graph_file_name);
 
         Payload p;
-        p.operationNumber = operation_number;
-        p.payload = graph_file_name;
-        p.sequenceNumber = sequence_number;
+        p.operation_number = operation_number;
+        strcpy(p.graph_file_name, graph_file_name);
+        p.sequence_number = sequence_number;
         m.payload = p;
 
 //         // Create a shared memory segment for the request
@@ -134,10 +145,13 @@ int main() {
             exit(1);
         }
 
+        printf(
+            "\nSent message with: \nMessage Type: %d\nSequence Number:%d \nOperation Number:%d \nFile Name:%s\n",m.mtype ,m.payload.sequence_number, m.payload.operation_number, m.payload.graph_file_name);
+
         // {
         //     // Get Reply
         //     Message reply;
-        //     int fetchRes = msgrcv(msgid, &reply, sizeof(reply), ToLoadReceiver, 0);
+        //     int fetchRes = msgrcv(msgid, &reply, sizeof(reply), ToClient, 0);
         //     //Replace last 2nd zero before use(give appropriate msgtype)
         //     //If msgtyp is equal to zero, the first message on the queue is received.
         //     //If msgtyp is greater than 0, the first message of type, msgtyp, is received.
@@ -149,7 +163,7 @@ int main() {
         //         perror("Message could not be recieved by client");
         //         exit(1);
         //     }
-        //     printf("Reply from Server: \"%s\"", reply.payload);
+        //     printf("Reply from Server: \"%s\"", reply.payload.payload);
         // }
 
         // // Detach the shared memory segment

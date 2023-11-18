@@ -1,5 +1,4 @@
-#ifndef GRAPHDB_STRUCTS_H
-#define GRAPHDB_STRUCTS_H
+#pragma once
 
 enum MessageType
 {
@@ -25,29 +24,24 @@ enum Operation
     CREATE_OPERATION = 4
 };
 
-struct Payload
+typedef struct Payload
 {
-    int sequenceNumber;  // Request Number; Unique for each client request
-    int operationNumber; // Operation Number
-    char *payload;   // Graph FileName
-};
+    int sequence_number;
+    int operation_number;
+    char graph_file_name[100];
+} Payload;
 
-// Message Structure
-struct Message
+// Message Structure Definition
+typedef struct Message
 {
-    long MessageType;
-    struct Payload payload;
-};
-
-typedef struct Message Message;
-typedef struct Payload Payload;
+    long mtype;
+    Payload payload;
+} Message;
 
 
 #define MAX_SIZE 1024
 #define SHARED_MEMORY_SIZE 1024
 
-char *msgq_file = "msgq";
+char *msgq_file = "progfile";
 
 #include <sys/msg.h>
-
-#endif // GRAPHDB_STRUCTS.h

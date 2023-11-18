@@ -8,7 +8,20 @@
 #include <sys/msg.h>
 #include <errno.h>
 #include <pthread.h>
-#include "../graphdb/structs.h"
+
+typedef struct Payload
+{
+    int sequence_number;
+    int operation_number;
+    char graph_file_name[1024];
+} Payload;
+
+// Message Structure Definition
+typedef struct Message
+{
+    long mtype;
+    Payload payload;
+} Message;
 
 // pthread_mutex_t writeLock;
 // pthread_mutex_t readLock;
@@ -16,12 +29,13 @@
 
 int main(int argc, char *argv[])
 {
+
 	// Define Connection
 	key_t key;
 	int msg_id;
 
 	// Create Shared Message Queuep
-	key = ftok(msgq_file, 65);
+	key = ftok("progfile", 65);
 	msg_id = msgget(key, 0666 | IPC_CREAT);
 
 	// Error Handling
@@ -31,49 +45,60 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	// pthread_mutex_init(&writeLock, NULL);
-	// pthread_mutex_init(&readLock, NULL);
+	printf("Load Balancer created Message Queue.\n\n");
+
+	// // pthread_mutex_init(&writeLock, NULL);
+	// // pthread_mutex_init(&readLock, NULL);
 
 	while (true)
 	{
 		Message m;
-		// Receive Message
-		int fetchRes = msgrcv(msg_id, &m, sizeof(m), ToLoadReceiver, 0);
 
-		printf("%d", m.payload.operationNumber);
+		// Receive Message;
+		int fetchRes = msgrcv(msg_id, &m, sizeof(m), 0, 0);
+
 		// Error Handling
 		if (fetchRes == -1)
 		{
-			perror("Server could not receive message");
+			perror("Load Balancer could not receive message");
 			exit(1);
 		}
 
-		// m.MessageType = ToSecondaryServer1;
+		 printf(
+            "\nRecieved message with: \nMessage Type: %d\nSequence Number:%d \nOperation Number:%d \nFile Name:%s\n",m.mtype ,m.payload.sequence_number, m.payload.operation_number, m.payload.graph_file_name);
 
-		// // Send To Server (Either Primary or Secondary)
-		// int sendRes = msgsnd(msg_id, &m, sizeof(m), 0);
-		
-		// // Error Handling
-		// if (sendRes == -1)
-		// {
-		// 	perror("Load Balancer could not send message");
-		// 	exit(1);
-		// }
 
-		// Payload p = m.payload;
+		m.mtype = 3;
 
-		// pthread_t thread;
-		// pthread_attr_t thread_attr;
-		// pthread_attr_init(&thread_attr);
+		// Send To Server (Either Primary or Secondary)
+		int sendRes = msgsnd(msg_id, &m, sizeof(m), 0);
 
-		// struct ThreadParams params = {
-		// 	.m = m,
-		// 	.msg_id = msg_id
-		// };
+		// Error Handling
+		if (sendRes == -1)
+		{
+			perror("Load Balancer could not send message");
+			exit(1);
+		}
 
-		// int pthread_create(thread, thread_attr, HandleRequest, (void *)&params);
-		// pthread_join(thread, NULL);
+		 printf(
+            "\n Sent message with: \nMessage Type: %d\nSequence Number:%d \nOperation Number:%d \nFile Name:%s\n",m.mtype ,m.payload.sequence_number, m.payload.operation_number, m.payload.graph_file_name);
+
+		// 	// Payload p = m.payload;
+
+		// 	// pthread_t thread;
+		// 	// pthread_attr_t thread_attr;
+		// 	// pthread_attr_init(&thread_attr);
+
+		// 	// struct ThreadParams params = {
+		// 	// 	.m = m,
+		// 	// 	.msg_id = msg_id
+		// 	// };
+
+		// 	// int pthread_create(thread, thread_attr, HandleRequest, (void *)&params);
+		// 	// pthread_join(thread, NULL);
 	}
+
+	return 0;
 }
 
 // int HandleRequest(void *params)
