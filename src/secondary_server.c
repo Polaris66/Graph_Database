@@ -5,10 +5,12 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
+#include <sys/shm.h>
 #include <errno.h>
 #include <pthread.h>
+#include <limits.h>
 
-static int idx = 0;
+#define MAX_NODES 10
 
 typedef struct Payload
 {
@@ -17,6 +19,12 @@ typedef struct Payload
     char graph_file_name[50];
     int result[50];
 } Payload;
+
+typedef struct
+{
+	int nodes;
+	int adjacencyMatrix[MAX_NODES][MAX_NODES];
+} SharedData;
 
 // Message Structure Definition
 typedef struct Message
@@ -143,7 +151,15 @@ void *dfs(void *params){
     Message *m = utils->m;
     long msg_id = utils->msg_id;
 
-    int start = 1;
+    // Generate a key for the shared memory segment
+	key_t shkey = ftok("shmfile", m->payload.sequence_number);
+
+	// Get the shared memory segment
+	int shmid = shmget(shkey, sizeof(SharedData), 0666);
+
+	// Attach the shared memory segment to the process
+	SharedData *data = (SharedData *)shmat(shmid, NULL, 0);
+    int start = data->nodes;
     start--;
 
     int n;
@@ -235,7 +251,7 @@ void *handleBfs(void *props){
     for (int i = 0; i < n; i++)
     {
         if(res[i]==-1){
-            res[i] = u;
+            res[i] = u + 1;
             break;
         }
     }
@@ -264,7 +280,16 @@ void *bfs(void *params){
     Message *m = utils->m;
     long msg_id = utils->msg_id;
 
-    int start = 1;
+    // Generate a key for the shared memory segment
+	key_t shkey = ftok("shmfile", m->payload.sequence_number);
+
+	// Get the shared memory segment
+	int shmid = shmget(shkey, sizeof(SharedData), 0666);
+
+	// Attach the shared memory segment to the process
+	SharedData *data = (SharedData *)shmat(shmid, NULL, 0);
+
+    int start = data->nodes;
     start--;
 
     int n;
@@ -381,6 +406,9 @@ int main(int argc, char *argv[])
 
     printf("Secondary Server %d Unleashing Pure Power 💥💻🔥\n", SERVER_NUMBER);
 
+    pthread_t threads[1000];
+    int idx = 0;
+
     // Main Loop
     while (true)
     {
@@ -396,13 +424,22 @@ int main(int argc, char *argv[])
 			perror("Secondary Server could not receive message");
 			exit(1);
 		}
+
+        if(m.payload.sequence_number == INT_MAX){
+            for (int i = 0; i < idx; i++)
+            {
+                pthread_join(threads[i], NULL);
+            }
+            exit(0);
+        }
+
         if(m.payload.operation_number == 3){
             pthread_t tid;
             dfs_utils dfsutils;
             dfsutils.m = &m;
             dfsutils.msg_id = msg_id;
             pthread_create(&tid, NULL, dfs, (void *)&dfsutils);
-            pthread_join(tid, NULL);
+            threads[idx++] = tid;
         }
         else if(m.payload.operation_number == 4){
             pthread_t tid;
@@ -410,7 +447,7 @@ int main(int argc, char *argv[])
             dfsutils.m = &m;
             dfsutils.msg_id = msg_id;
             pthread_create(&tid, NULL, bfs, (void *)&dfsutils);
-            pthread_join(tid, NULL);
+            threads[idx++] = tid;
         }
     }
 
