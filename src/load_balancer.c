@@ -10,14 +10,9 @@
 #include <pthread.h>
 #include "../graphdb/structs.h"
 
-pthread_mutex_t writeLock;
-pthread_mutex_t readLock;
-int readerCount = 0;
-
-struct ThreadParams {
-    Message m;
-    int msg_id;
-};
+// pthread_mutex_t writeLock;
+// pthread_mutex_t readLock;
+// int readerCount = 0;
 
 int main(int argc, char *argv[])
 {
@@ -36,8 +31,8 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	pthread_mutex_init(&writeLock, NULL);
-	pthread_mutex_init(&readLock, NULL);
+	// pthread_mutex_init(&writeLock, NULL);
+	// pthread_mutex_init(&readLock, NULL);
 
 	while (true)
 	{
@@ -45,6 +40,7 @@ int main(int argc, char *argv[])
 		// Receive Message
 		int fetchRes = msgrcv(msg_id, &m, sizeof(m), ToLoadReceiver, 0);
 
+		printf("%d", m.payload.operationNumber);
 		// Error Handling
 		if (fetchRes == -1)
 		{
@@ -52,16 +48,17 @@ int main(int argc, char *argv[])
 			exit(1);
 		}
 
-			m.MessageType = ToSecondaryServer1;
+		// m.MessageType = ToSecondaryServer1;
 
-		// Send To Server (Either Primary or Secondary)
-		int sendRes = msgsnd(msg_id, &m, sizeof(m), 0);
-		// Error Handling
-		if (sendRes == -1)
-		{
-			perror("Load Balancer could not send message");
-			exit(1);
-		}
+		// // Send To Server (Either Primary or Secondary)
+		// int sendRes = msgsnd(msg_id, &m, sizeof(m), 0);
+		
+		// // Error Handling
+		// if (sendRes == -1)
+		// {
+		// 	perror("Load Balancer could not send message");
+		// 	exit(1);
+		// }
 
 		// Payload p = m.payload;
 

@@ -7,7 +7,8 @@ enum MessageType
     ToPrimaryServer = 2,
     ToSecondaryServer1 = 3,
     ToSecondaryServer2 = 4,
-    ToClient = 5
+    ToClient = 5,
+    Cleanup = 6
 };
 
 enum SecondaryServer
