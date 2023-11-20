@@ -1,11 +1,12 @@
-# OS Group Assignment - 2
+# OS Group Assignment
 
 ## Team Members:
 
 #### Add your names here:
-
+0. Rishabh Mittal
 1. Malladi Pradyumna
 2. Anirudh Bagalkotker
+
 
 ## Setup Instructions:
 
