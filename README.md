@@ -7,6 +7,8 @@
 1. Malladi Pradyumna
 2. Anirudh Bagalkotker
 
+#### Architecture Design:
+![image](https://github.com/MSSRPRAD/Graph_Database/assets/97427342/b0733790-8795-4074-9c0a-befb35d47418)
 
 ## Setup Instructions:
 
